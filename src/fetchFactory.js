@@ -3,19 +3,89 @@
 
 // require('fetch-everywhere')
 import Promise from 'bluebird'
-import SafeUrlAssembler from 'safe-url-assembler'
 
 import { NetworkError, JSONParseError } from './errors'
+import { selectUrlString, selectBodyJSON } from './selectors'
 
 export const GET = 'GET'
 export const POST = 'POST'
 export const PUT = 'PUT'
 export const DELETE = 'DELETE'
 
-const MIMETYPE_X_WWW_FORM_URLENCODED = 'application/x-www-form-urlencoded'
-const MIMETYPE_JSON = 'application/json'
+export const MIMETYPE_X_WWW_FORM_URLENCODED = (
+  'application/x-www-form-urlencoded')
+export const MIMETYPE_JSON = (
+  'application/json')
 
 const UNEXPECTED_RESPONSE = 'Received unexpected response from the server.'
+
+/*
+  checkStatus, resolveJson, resolveText:
+    helper functions for resolveResponse.
+*/
+
+const checkStatus = (status: number, data: any) => {
+  if (status < 200 || status >= 300) {
+    notify && notify(UNEXPECTED_RESPONSE)
+    throw new NetworkError(status, data)
+  }
+}
+
+const resolveJson = (response: Object, status: number) => {
+  return response.json()
+    .then(json => {
+      checkStatus(json)
+      return Promise.resolve({
+        body: json,
+        status: response.status
+      })
+    })
+    .catch(() => {
+      notify && notify(UNEXPECTED_RESPONSE)
+      throw new JSONParseError(status)
+    })
+}
+
+const resolveText = (response: Object, status: number) => {
+  return response.text()
+    .then(text => {
+      checkStatus(text)
+      return Promise.resolve({
+        body: text,
+        status: response.status
+      })
+    })
+    .catch(err => {
+      notify && notify(UNEXPECTED_RESPONSE)
+      throw err
+    })
+}
+
+/*
+  resolveResponse:
+    returns processed data form for response object's body data.
+*/
+
+export const resolveResponse = (response: Object, asJson: boolean) => {
+  const { status, headers } = response
+
+  const isJson = headers.get('Content-Type') === MIMETYPE_JSON
+
+
+  /*
+    Raise error if non-successful response.
+  */
+
+  if (asJson) {
+    return resolveJson(response, status)
+  } else {
+    if (isJson) {
+      return resolveJson(response, status)
+    } else {
+      return resolveText(response, status)
+    }
+  }
+}
 
 /*
   fetchFactory:
@@ -40,8 +110,8 @@ export const fetchFactory = (
   return (
     token: string|null,
     url: string,
-    body?: Object|string|null = null,
-    file?: Object|null = null,
+    body?: Object|string|null = undefined,
+    file?: Object|null = undefined,
     options?: Object = {},
     headers?: Object = {}
   ) => {
@@ -53,7 +123,7 @@ export const fetchFactory = (
       Resolve @url if raw Object from safe-url-assembler.
     */
 
-    _url = url.toString ? url.toString() : url
+    _url = selectUrlString(url)
 
     /*
       Adding a @file will set method to `POST`.
@@ -79,7 +149,7 @@ export const fetchFactory = (
       }
     } else {
       // serialise body if given as object
-      _body = typeof body === 'object' ? JSON.stringify(body) : body
+      _body = selectBodyJSON(body)
     }
 
     /*
@@ -104,61 +174,15 @@ export const fetchFactory = (
       Do request.
     */
 
+    const asJson = options['json'] === false
+
     return fetch(url, {
       method: method,
       body: _body,
       headers: {..._headers, ...headers},
       ...options
     }).then(response => {
-      const { status, headers } = response
-
-      const isJson = headers.get('Content-Type') === MIMETYPE_JSON
-      const asJson = options['json'] === false
-
-      /*
-        Raise error if non-successful response.
-      */
-
-      const checkStatus = (data: any) => {
-        if (status < 200 || status >= 300) {
-          notify && notify(UNEXPECTED_RESPONSE)
-          throw new NetworkError(status, data)
-        }
-      }
-
-      const resolveJson = () => {
-        return response.json()
-          .then(json => {
-            return checkStatus(json)
-            Promise.resolve(json)
-          })
-          .catch(() => {
-            notify && notify(UNEXPECTED_RESPONSE)
-            throw new JSONParseError(status)
-          })
-      }
-
-      const resolveText = () => {
-        return response.text()
-          .then(text => {
-            return checkStatus(text)
-            Promise.resolve(text)
-          })
-          .catch(err => {
-            notify && notify(UNEXPECTED_RESPONSE)
-            throw err
-          })
-      }
-
-      if (asJson) {
-        return resolveJson()
-      } else {
-        if (isJson) {
-          return resolveJson()
-        } else {
-          return resolveText()
-        }
-      }
+      return resolveResponse(response, asJson)
     })
   }
 }

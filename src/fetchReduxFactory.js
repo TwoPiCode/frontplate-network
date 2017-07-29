@@ -2,6 +2,7 @@
 // @flow
 
 import { fetchFactory } from './fetchFactory'
+import { selectReduxState } from './selectors'
 
 /*
   fetchReduxFactory:
@@ -19,8 +20,8 @@ export const fetchReduxFactory = (
   return (
     state: Object|Function,
     url: string,
-    body?: Object|string = undefined,
-    file?: Object = undefined,
+    body?: Object|string|null = undefined,
+    file?: Object|null = undefined,
     options?: Object = {},
     headers?: Object = {}
   ) => {
@@ -28,14 +29,10 @@ export const fetchReduxFactory = (
 
     /*
       Resolve state if still function.
-    */
-
-    _state = typeof state === 'function' ? state() : state
-
-    /*
       Resolve token from state if @getToken.
     */
 
+    _state = selectReduxState(state)
     const token = (getToken && getToken(state)) || null
 
     /*

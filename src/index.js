@@ -1,12 +1,14 @@
 
 // @flow
 
-import * as network from './network'
-import * as store from './store'
-import * as redux from './redux'
-import * as routing from './routing'
-import * as datetime from './datetime'
+import { fetchFactory, GET, POST, PUT, DELETE } from './fetchFactory'
+import { fetchReduxFactory } from './fetchReduxFactory'
+import { networkFactory } from './networkFactory'
 
 export {
-  network, store, redux, routing, datetime
+  fetchFactory, GET, POST, PUT, DELETE,
+  fetchReduxFactory,
+  networkFactory
 }
+
+export default networkFactory
