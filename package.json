@@ -14,9 +14,8 @@
     "url": "git+https://github.com/studioarmix/frontplate-network.git"
   },
   "keywords": [
-    "dev",
-    "tool",
-    "config"
+    "network",
+    "fetch"
   ],
   "author": "Peter Boyer <petertboyer@gmail.com>",
   "license": "MIT",
