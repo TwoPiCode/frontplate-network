@@ -1,7 +1,7 @@
 
 // @flow
 
-import { fetchFactory } from './network'
+import { fetchFactory } from './fetchFactory'
 
 /*
   fetchReduxFactory:

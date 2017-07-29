@@ -153,6 +153,7 @@ export const networkFactory = (
           return response
         })
     }
+  }
 
   return {api, requestFactory}
 }

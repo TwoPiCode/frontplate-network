@@ -6,7 +6,7 @@
     custom error containing status and body of request information
 */
 
-export const NetworkError = (status: number, body: any) {
+const NetworkError = (status: number, body: any) => {
   this.name = 'NetworkError'
   this.status = status
   this.body = body
@@ -21,7 +21,7 @@ NetworkError.prototype.constructor = NetworkError
     custom error containing status and body of request body that is malformed
 */
 
-export const JSONParseError = (status: number, body: any) {
+const JSONParseError = (status: number, body: any) => {
   this.name = 'JSONParseError'
   this.status = status
   this.body = body
@@ -30,3 +30,7 @@ export const JSONParseError = (status: number, body: any) {
 }
 JSONParseError.prototype = Object.create(Error.prototype)
 JSONParseError.prototype.constructor = JSONParseError
+
+export {
+  NetworkError, JSONParseError
+}
