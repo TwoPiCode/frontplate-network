@@ -64,8 +64,8 @@ export const networkFactory = (
   resolver?: Function = null,
   useRedux?: Boolean = true
 ) => {
-  const { apiHostUrl, apiDemoUrl, dev } = config
-  const log = logFactory(dev)
+  const { apiHostUrl, apiDemoUrl, dev, logging } = config
+  const log = logFactory(logging)
 
   log(INFO, `✅ API: ${apiHostUrl}`)
   const api = SafeUrlAssembler(apiHostUrl)
@@ -94,7 +94,7 @@ export const networkFactory = (
       const startTime = (new Date()).getTime()
       const endpoint = (url || '').replace(apiHostUrl, '')
 
-      const isDemoHost = ((url || '').indexOf(apiDemoUrl) === 0)
+      const isDemoHost = dev && ((url || '').indexOf(apiDemoUrl) === 0)
       const request = isDemoHost ? fakeRequest : realRequest
 
       log(
