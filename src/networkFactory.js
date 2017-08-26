@@ -120,7 +120,7 @@ export const networkFactory = (
             INFO,
             `⤴ %c[${status}] ${method} %c${endpoint} (${deltaTime}ms)`,
             `color:${color}`, 'color:black;',
-            {response: (body.error ? body.error : body)}
+            {response: (body && body.error ? body.error : body)}
           )
 
           // Raise an actual error
