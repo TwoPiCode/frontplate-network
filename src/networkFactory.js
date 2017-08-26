@@ -74,8 +74,8 @@ export const networkFactory = (
 
   const requestFactory = (
     method: string,
+    getToken: Function = null,
     notify: Function = null,
-    getToken: Function = () => null
   ) => {
     const realRequest = factory(method, notify, getToken)
     const fakeRequest = fakeFactory(apiHostUrl, resolver)

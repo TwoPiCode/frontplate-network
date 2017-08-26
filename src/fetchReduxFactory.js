@@ -33,7 +33,7 @@ export const fetchReduxFactory = (
     */
 
     _state = selectReduxState(state)
-    const token = (getToken && getToken(state)) || null
+    const token = (getToken && getToken(_state)) || null
 
     /*
       Do request.
