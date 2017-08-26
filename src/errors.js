@@ -6,11 +6,10 @@
     custom error containing status and body of request information
 */
 
-const NetworkError = (status: number, body: any) => {
-  this.name = 'NetworkError'
+function NetworkError (status: number, body: any) {
   this.status = status
   this.body = body
-  this.message = 'A network error occurred. Please try again.'
+  this.message = `Recieved ${status} response from server.`
   this.stack = (new Error()).stack
 }
 NetworkError.prototype = Object.create(Error.prototype)
@@ -21,11 +20,10 @@ NetworkError.prototype.constructor = NetworkError
     custom error containing status and body of request body that is malformed
 */
 
-const JSONParseError = (status: number, body: any) => {
-  this.name = 'JSONParseError'
+function JSONParseError (status: number, body: any) {
   this.status = status
   this.body = body
-  this.message = 'Received unexpected response from the server.'
+  this.message = 'Failed to parse response from server.'
   this.stack = (new Error()).stack
 }
 JSONParseError.prototype = Object.create(Error.prototype)

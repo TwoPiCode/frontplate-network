@@ -6,7 +6,8 @@ import SafeUrlAssembler from 'safe-url-assembler'
 
 import { fetchFactory, resolveResponse, MIMETYPE_JSON } from './fetchFactory'
 import { fetchReduxFactory } from './fetchReduxFactory'
-import { selectUrlString } from './selectors'
+import { selectUrlString, selectStatusColor } from './selectors'
+import { NetworkError, JSONParseError } from './errors'
 
 /*
   logFactory:
@@ -57,8 +58,6 @@ const fakeFactory = (
     @useRedux controls whether or not to use the getToken alternative for auth.
 */
 
-const errorTypes = ['NetworkError', 'JSONParseError', 'TypeError']
-
 export const networkFactory = (
   config: Object,
   resolver?: Function = null,
@@ -74,22 +73,17 @@ export const networkFactory = (
 
   const requestFactory = (
     method: string,
-    getToken: Function = null,
-    notify: Function = null,
+    getToken: Function = null
   ) => {
-    const realRequest = factory(method, notify, getToken)
+    const realRequest = factory(method, getToken)
     const fakeRequest = fakeFactory(apiHostUrl, resolver)
 
     return (
-      token: string|null,
-      url: string,
-      body?: Object|string|null = undefined,
-      file?: Object|null = undefined,
-      options?: Object = {},
-      headers?: Object = {}
+      ...args
     ) => {
       // BEFORE REQUEST
-      url = selectUrlString(url)
+      const url = selectUrlString(args[1])
+      args[1] = url
 
       const startTime = (new Date()).getTime()
       const endpoint = (url || '').replace(apiHostUrl, '')
@@ -104,46 +98,45 @@ export const networkFactory = (
       )
 
       // REQUEST!
-      return request(token, url, body, file, options, headers)
+      return request(...args)
 
         // AFTER REQUEST
         .catch(err => {
           const endTime = (new Date()).getTime()
           const deltaTime = endTime - startTime
-          const isRequestError = errorTypes.indexOf(err.name) > -1
 
-          let _status = '!!!'
-          let _response = null
+          let status = '!!!'
+          let body = null
 
-          // if raised error is a Network or JSONParse error use object data
-          if (isRequestError) {
-            const { status, body } = err
-            _status = status
-            _response = body
+          // if error is a Network error use object data
+          if (err instanceof NetworkError) {
+            status = err.status || status
+            body = err.body || body
           }
 
+          const color = selectStatusColor(status)
+
           log(
-            ERROR,
-            `⤴ %c[!!!] ${method} %c${endpoint} (${deltaTime}ms)`,
-            'color:#D36B25;', 'color:black;',
-            {response: body, error: err}
+            INFO,
+            `⤴ %c[${status}] ${method} %c${endpoint} (${deltaTime}ms)`,
+            `color:${color}`, 'color:black;',
+            {response: (body.error ? body.error : body)}
           )
 
           // Raise an actual error
-          if (isRequestError) {
-            throw err
-          }
+          throw err
         })
-        .then(response => {
+        .then(res => {
           const endTime = (new Date()).getTime()
           const deltaTime = endTime - startTime
 
-          const { status, body } = response
+          const { status, body } = res
+          const color = selectStatusColor(status)
 
           log(
             INFO,
             `⤴ %c[${status}] ${method} %c${endpoint} (${deltaTime}ms) %c${isDemoHost ? '[demo]' : ''}`,
-            'color:#D36B25;', 'color:black;', 'color:blue;',
+            `color:${color}`, 'color:black;', 'color:blue;',
             {response: body}
           )
 

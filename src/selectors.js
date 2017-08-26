@@ -12,3 +12,27 @@ export const selectUrlString = (url: Object|string): string => {
 export const selectBodyJSON = (body: Object|string): string => {
   return typeof body === 'object' ? JSON.stringify(body) : body
 }
+
+/*
+  selectStatusColor:
+    helper that takes status code and returns hex color code.
+*/
+
+export const selectStatusColor = (status: number) => {
+  if (status >= 200 && status < 300) {
+    // 200s - ok
+    return '#00e130'
+  } else if (status >= 400 && status < 500) {
+    // 400s - client error
+    return '#ff8200'
+  } else if (status >= 100 && status < 200) {
+    // 300s - redirection
+    return '#ab00ff'
+  } else if (status >= 100 && status < 200) {
+    // 100s - informational
+    return '#f100ff'
+  } else {
+    // 500s - server error
+    return '#f00000'
+  }
+}

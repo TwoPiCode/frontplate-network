@@ -26,38 +26,37 @@ const UNEXPECTED_RESPONSE = 'Received unexpected response from the server.'
 
 const checkStatus = (status: number, data: any) => {
   if (status < 200 || status >= 300) {
-    notify && notify(UNEXPECTED_RESPONSE)
     throw new NetworkError(status, data)
   }
 }
 
-const resolveJson = (response: Object, status: number) => {
+const resolveJson = (response: Object) => {
+  const { status } = response
   return response.json()
+    .catch(() => {
+      throw new JSONParseError(status)
+    })
     .then(json => {
-      checkStatus(json)
+      checkStatus(status, json)
       return Promise.resolve({
         body: json,
         status: response.status
       })
     })
-    .catch(() => {
-      notify && notify(UNEXPECTED_RESPONSE)
-      throw new JSONParseError(status)
-    })
 }
 
-const resolveText = (response: Object, status: number) => {
+const resolveText = (response: Object) => {
+  const { status } = response
   return response.text()
+    .catch(err => {
+      throw err
+    })
     .then(text => {
-      checkStatus(text)
+      checkStatus(status, text)
       return Promise.resolve({
         body: text,
         status: response.status
       })
-    })
-    .catch(err => {
-      notify && notify(UNEXPECTED_RESPONSE)
-      throw err
     })
 }
 
@@ -67,23 +66,24 @@ const resolveText = (response: Object, status: number) => {
 */
 
 export const resolveResponse = (response: Object, asJson: boolean) => {
-  const { status, headers } = response
+  const { headers } = response
 
   const isJson = headers.get('Content-Type') === MIMETYPE_JSON
-
 
   /*
     Raise error if non-successful response.
   */
 
   if (asJson) {
-    return resolveJson(response, status)
-  } else {
+    return resolveJson(response)
+  } else if (response) {
     if (isJson) {
-      return resolveJson(response, status)
+      return resolveJson(response)
     } else {
-      return resolveText(response, status)
+      return resolveText(response)
     }
+  } else {
+    return null
   }
 }
 
@@ -91,7 +91,6 @@ export const resolveResponse = (response: Object, asJson: boolean) => {
   fetchFactory:
     network helper that takes:
       @method: a http request method like 'GET', 'POST', 'DELETE' etc.
-      @notify?: a function that takes a string to report on a network error.
     returns a function that takes:
       @token: if !token Authorization header is not added.
       @url: target of the request.
@@ -104,8 +103,7 @@ export const resolveResponse = (response: Object, asJson: boolean) => {
 */
 
 export const fetchFactory = (
-  method: string,
-  notify: Function = null
+  method: string
 ) => {
   return (
     token: string|null,
@@ -174,7 +172,7 @@ export const fetchFactory = (
       Do request.
     */
 
-    const asJson = options['json'] === false
+    const asJson = options['json'] || false
 
     return fetch(url, {
       method: method,

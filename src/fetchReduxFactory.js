@@ -12,18 +12,13 @@ import { selectReduxState } from './selectors'
 
 export const fetchReduxFactory = (
   method: string,
-  notify: Function = null,
-  getToken: Function = () => null
+  getToken: Function | null = null
 ) => {
-  const request = fetchFactory(method, notify)
+  const request = fetchFactory(method)
 
   return (
     state: Object|Function,
-    url: string,
-    body?: Object|string|null = undefined,
-    file?: Object|null = undefined,
-    options?: Object = {},
-    headers?: Object = {}
+    ...args
   ) => {
     let _state = state
 
@@ -33,13 +28,17 @@ export const fetchReduxFactory = (
     */
 
     _state = selectReduxState(state)
-    const token = (getToken && getToken(_state)) || null
+    const token = (
+      typeof getToken === 'function'
+        ? getToken(_state)
+        : null
+    )
 
     /*
       Do request.
     */
 
-    return request(token, url, body, file, options, headers)
+    return request(token, ...args)
   }
 }
 
