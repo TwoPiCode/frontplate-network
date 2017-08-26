@@ -21,7 +21,7 @@ export const selectBodyJSON = (body: Object|string): string => {
 export const selectStatusColor = (status: number) => {
   if (status >= 200 && status < 300) {
     // 200s - ok
-    return '#00e130'
+    return '#00ae25'
   } else if (status >= 400 && status < 500) {
     // 400s - client error
     return '#ff8200'
