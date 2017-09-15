@@ -2,10 +2,10 @@
   "name": "frontplate-network",
   "version": "0.1.6",
   "description": "Frontplate Network Helpers",
-  "main": "lib/index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "build": "babel -s inline -d lib src",
-    "develop": "babel -w -s inline -d lib src",
+    "build": "babel -s inline -d dist src",
+    "develop": "babel -w -s inline -d dist src",
     "prepublish": "npm test && npm run build",
     "test": "echo \"No test specified\" && exit 0"
   },
