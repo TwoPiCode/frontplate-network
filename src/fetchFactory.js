@@ -12,8 +12,8 @@ export const POST = 'POST'
 export const PUT = 'PUT'
 export const DELETE = 'DELETE'
 
-export const MIMETYPE_X_WWW_FORM_URLENCODED = (
-  'application/x-www-form-urlencoded')
+export const MIMETYPE_FORMDATA = (
+  'multipart/form-data')
 export const MIMETYPE_JSON = (
   'application/json')
 
@@ -25,7 +25,7 @@ const UNEXPECTED_RESPONSE = 'Received unexpected response from the server.'
 */
 
 const checkStatus = (status: number, data: any) => {
-  if (status < 200 || status >= 300) {
+  if (!(status >= 200 && status < 400)) {
     throw new NetworkError(status, data)
   }
 }
@@ -103,84 +103,60 @@ export const resolveResponse = (response: Object, asJson: boolean) => {
 */
 
 export const fetchFactory = (
-  method: string
+  method:string,
+  mutateRequest:Function = (request) => request
 ) => {
   return (
-    token: string|null,
-    url: string,
+    url:string,
     body?: Object|string|null = undefined,
-    file?: Object|null = undefined,
+    headers?: Object = {},
     options?: Object = {},
-    headers?: Object = {}
   ) => {
-    let _url = url
-    let _body = body
-    let _headers = {}
-
-    /*
-      Resolve @url if raw Object from safe-url-assembler.
-    */
-
-    _url = selectUrlString(url)
-
-    /*
-      Adding a @file will set method to `POST`.
-    */
-
-    if (file) {
-      method = POST
+    const _request = {
+      url,
+      body,
+      headers: {},
+      options: {}
     }
 
-    /*
-      Adding a @file + @body with FormData, or JSON serialise @body.
-    */
+    const {
+      json: optionAsJson = false,
+      formdata: optionFormData = false
+    } = options
 
-    if (file) {
-      _body = new FormData()
+    // Resolve @url if raw Object from safe-url-assembler.
+    _request.url = selectUrlString(_request.url)
 
-      // add the file
-      _body.append('file', file)
+    // Serialise body if given as object,
+    _request.body = selectBodyJSON(_request.body)
 
-      // add all key:values from body object
+    // Using formdata (e.g. in case of file upload).
+    if (optionFormData) {
+      _request.body = new FormData()
       if (typeof body === 'object') {
-        Object.keys(body).map(key => _body.append(key, body[key]))
+        Object.keys(body).map(key => _request.body.append(key, body[key]))
       }
-    } else {
-      // serialise body if given as object
-      _body = selectBodyJSON(body)
     }
 
-    /*
-      Adding Content-Type header if method is GET.
-    */
-
+    // Adding Content-Type headers.
     if (method === GET) {
-      _headers['Content-Type'] = MIMETYPE_X_WWW_FORM_URLENCODED
-    } else if (!file) {
-      _headers['Content-Type'] = MIMETYPE_JSON
+      delete _request.headers['Content-Type']
+    } else if (optionFormData) {
+      _request.headers['Content-Type'] = MIMETYPE_FORMDATA
+    } else {
+      _request.headers['Content-Type'] = MIMETYPE_JSON
     }
 
-    /*
-      Adding Authorization header from @token.
-    */
+    // Allow external modification of the request before fetch.
+    const request = mutateRequest(_request)
 
-    if (token) {
-      _headers['Authorization'] = token
-    }
-
-    /*
-      Do request.
-    */
-
-    const asJson = options['json'] || false
-
-    return fetch(url, {
+    return fetch(request.url, {
       method: method,
-      body: _body,
-      headers: {..._headers, ...headers},
-      ...options
+      body: request.body,
+      headers: request.headers,
+      ...request.options
     }).then(response => {
-      return resolveResponse(response, asJson)
+      return resolveResponse(response, optionAsJson)
     })
   }
 }

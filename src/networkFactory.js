@@ -5,7 +5,6 @@ import Promise from 'bluebird'
 import SafeUrlAssembler from 'safe-url-assembler'
 
 import { fetchFactory, resolveResponse, MIMETYPE_JSON } from './fetchFactory'
-import { fetchReduxFactory } from './fetchReduxFactory'
 import { selectUrlString, selectStatusColor } from './selectors'
 import { NetworkError, JSONParseError } from './errors'
 
@@ -17,7 +16,7 @@ import { NetworkError, JSONParseError } from './errors'
 const INFO = 'info'
 const ERROR = 'error'
 
-const logFactory = (show: boolean = false) => {
+const logFactory = (show:boolean = false) => {
   return (type: string, ...args: Array<mixed>) => {
     return show ? console[type](...args) : null
   }
@@ -29,23 +28,19 @@ const logFactory = (show: boolean = false) => {
     resolver function that then returns an Object that mocks data from an API.
 */
 
-const fakeFactory = (
-  rootUrl: string,
-  resolver?: Function = () => null
+const fakeFetchFactory = (
+  rootUrl:string,
+  resolver?:Function = () => null
 ) => {
   return (
-    token: string|null,
-    url: string,
-    body?: Object|string|null = null,
-    file?: Object|null = null,
-    options?: Object = {},
-    headers?: Object = {}
+    url:string,
+    body?:Object|string|null = null,
+    headers?:Object = {}
   ) => {
     return new Promise(resolve => {
       const endpoint = (url || '').replace(rootUrl, '')
       const data = (resolver && resolver(endpoint)) || null
       const response = new Response(JSON.stringify(data), {
-        headers: { 'Content-Type': MIMETYPE_JSON }
       })
       return resolve(resolveResponse(response))
     })
@@ -55,46 +50,63 @@ const fakeFactory = (
 /*
   networkFactory:
     helper that takes @config object and @resolver function for data testing.
-    @useRedux controls whether or not to use the getToken alternative for auth.
 */
 
 export const networkFactory = (
-  config: Object,
-  resolver?: Function = null,
-  useRedux?: Boolean = true
+  config:Object = {},
+  resolver?:Function = null,
 ) => {
-  const { apiHostUrl, apiDemoUrl, dev, logging } = config
-  const log = logFactory(logging)
+  const {
+    hostUrl,
+    demoUrl,
+    enableDemo = true,
+    enableLogging = true,
+    loggingHostInfo = true,
+    loggingRequest = true,
+    loggingResponse = true
+  } = config
 
-  log(INFO, `✅ API: ${apiHostUrl}`)
-  const api = SafeUrlAssembler(apiHostUrl)
+  const api = SafeUrlAssembler(hostUrl)
+  const log = logFactory(enableLogging)
 
-  const factory = useRedux ? fetchReduxFactory : fetchFactory
+  if (loggingHostInfo) {
+    log(INFO, `✅ API: ${hostUrl}`)
+  }
 
   const requestFactory = (
-    method: string,
-    getToken: Function = null
+    method:string,
+    options?:Object = {}
   ) => {
-    const realRequest = factory(method, getToken)
-    const fakeRequest = fakeFactory(apiHostUrl, resolver)
+    const {
+      mutateRequest: optionMutateRequest,
+      onResponse: optionOnResponse
+    } = options
+
+    const realRequest = fetchFactory(method, optionMutateRequest)
+    const fakeRequest = fakeFetchFactory(hostUrl, resolver)
 
     return (
       ...args
     ) => {
       // BEFORE REQUEST
-      const url = selectUrlString(args[1])
-      args[1] = url
+      const url = selectUrlString(args[0])
+      args[0] = url
+
+      const requestBody = args[1] || null
 
       const startTime = (new Date()).getTime()
-      const endpoint = (url || '').replace(apiHostUrl, '')
+      const endpoint = (url || '').replace(hostUrl, '')
 
-      const isDemoHost = dev && ((url || '').indexOf(apiDemoUrl) === 0)
+      const isDemoHost = enableDemo && ((url || '').indexOf(demoUrl) === 0)
       const request = isDemoHost ? fakeRequest : realRequest
 
       log(
         INFO,
         `⤵ %c[---] ${method} %c${endpoint}`,
-        'color:#999;', 'color:black;'
+        'color:#999;', 'color:black;',
+        {
+          ...(loggingRequest ? {request: requestBody} : {})
+        }
       )
 
       // REQUEST!
@@ -105,7 +117,7 @@ export const networkFactory = (
           const endTime = (new Date()).getTime()
           const deltaTime = endTime - startTime
 
-          let status = '!!!'
+          let status = null
           let body = null
 
           // if error is a Network error use object data
@@ -114,14 +126,17 @@ export const networkFactory = (
             body = err.body || body
           }
 
-          const color = selectStatusColor(status)
-
           log(
             INFO,
-            `⤴ %c[${status}] ${method} %c${endpoint} (${deltaTime}ms)`,
-            `color:${color}`, 'color:black;',
-            {response: (body && body.error ? body.error : body)}
+            `⤴ %c[${status || '!!!'}] ${method} %c${endpoint} (${deltaTime}ms)`,
+            `color:${selectStatusColor(status)}`, 'color:black;',
+            {
+              ...(loggingRequest ? {request: requestBody} : {}),
+              ...(loggingResponse ? {response: body} : {})
+            }
           )
+
+          optionOnResponse && optionOnResponse(status, body)
 
           // Raise an actual error
           throw err
@@ -131,21 +146,28 @@ export const networkFactory = (
           const deltaTime = endTime - startTime
 
           const { status, body } = res
-          const color = selectStatusColor(status)
 
           log(
             INFO,
             `⤴ %c[${status}] ${method} %c${endpoint} (${deltaTime}ms) %c${isDemoHost ? '[demo]' : ''}`,
-            `color:${color}`, 'color:black;', 'color:blue;',
-            {response: body}
+            `color:${selectStatusColor(status)}`, 'color:black;', 'color:blue;',
+            {
+              ...(loggingRequest ? {request: requestBody} : {}),
+              ...(loggingResponse ? {response: body} : {})
+            }
           )
+
+          optionOnResponse && optionOnResponse(status, body)
 
           return body
         })
     }
   }
 
-  return {api, requestFactory}
+  return {
+    api,
+    requestFactory
+  }
 }
 
 export default networkFactory
