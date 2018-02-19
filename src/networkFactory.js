@@ -3,9 +3,9 @@
 
 import SafeUrlAssembler from 'safe-url-assembler'
 
-import { fetchFactory, resolveResponse, MIMETYPE_JSON } from './fetchFactory'
+import { fetchFactory, resolveResponse } from './fetchFactory'
 import { selectUrlString, selectStatusColor } from './selectors'
-import { NetworkError, JSONParseError } from './errors'
+import { NetworkError } from './errors'
 
 /*
   logFactory:
@@ -13,11 +13,10 @@ import { NetworkError, JSONParseError } from './errors'
 */
 
 const INFO = 'info'
-const ERROR = 'error'
 
 const logFactory = (show: boolean = false) => {
   return (type: string, ...args: Array<mixed>) => {
-    return show ? console[type](...args) : null
+    return show ? console[type](...args) : null // eslint-disable-line
   }
 }
 
@@ -32,9 +31,7 @@ const fakeFetchFactory = (
   resolver?: Function = () => null
 ) => {
   return (
-    url: string,
-    body?: Object|string|null = null,
-    headers?: Object = {}
+    url: string
   ) => {
     return new Promise(resolve => {
       const endpoint = (url || '').replace(rootUrl, '')

@@ -15,8 +15,6 @@ export const MIMETYPE_FORMDATA = (
 export const MIMETYPE_JSON = (
   'application/json')
 
-const UNEXPECTED_RESPONSE = 'Received unexpected response from the server.'
-
 /*
   checkStatus, resolveJson, resolveText:
     helper functions for resolveResponse.
@@ -113,8 +111,7 @@ export const fetchFactory = (
     const _request = {
       url,
       body,
-      headers: {},
-      options: {}
+      headers: {...headers}
     }
 
     const {
@@ -152,7 +149,7 @@ export const fetchFactory = (
       method: method,
       body: request.body,
       headers: request.headers,
-      ...request.options
+      ...(request.options || {})
     }).then(response => {
       return resolveResponse(response, optionAsJson)
     })
