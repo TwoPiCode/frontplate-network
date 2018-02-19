@@ -1,9 +1,6 @@
 
 // @flow
 
-// require('fetch-everywhere')
-import Promise from 'bluebird'
-
 import { NetworkError, JSONParseError } from './errors'
 import { selectUrlString, selectBodyJSON } from './selectors'
 
@@ -11,6 +8,7 @@ export const GET = 'GET'
 export const POST = 'POST'
 export const PUT = 'PUT'
 export const DELETE = 'DELETE'
+export const PATCH = 'PATCH'
 
 export const MIMETYPE_FORMDATA = (
   'multipart/form-data')
@@ -103,11 +101,11 @@ export const resolveResponse = (response: Object, asJson: boolean) => {
 */
 
 export const fetchFactory = (
-  method:string,
-  mutateRequest:Function = (request) => request
+  method: string,
+  mutateRequest: Function = (request) => request
 ) => {
   return (
-    url:string,
+    url: string,
     body?: Object|string|null = undefined,
     headers?: Object = {},
     options?: Object = {},

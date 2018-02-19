@@ -1,7 +1,6 @@
 
 // @flow
 
-import Promise from 'bluebird'
 import SafeUrlAssembler from 'safe-url-assembler'
 
 import { fetchFactory, resolveResponse, MIMETYPE_JSON } from './fetchFactory'
@@ -16,7 +15,7 @@ import { NetworkError, JSONParseError } from './errors'
 const INFO = 'info'
 const ERROR = 'error'
 
-const logFactory = (show:boolean = false) => {
+const logFactory = (show: boolean = false) => {
   return (type: string, ...args: Array<mixed>) => {
     return show ? console[type](...args) : null
   }
@@ -29,13 +28,13 @@ const logFactory = (show:boolean = false) => {
 */
 
 const fakeFetchFactory = (
-  rootUrl:string,
-  resolver?:Function = () => null
+  rootUrl: string,
+  resolver?: Function = () => null
 ) => {
   return (
-    url:string,
-    body?:Object|string|null = null,
-    headers?:Object = {}
+    url: string,
+    body?: Object|string|null = null,
+    headers?: Object = {}
   ) => {
     return new Promise(resolve => {
       const endpoint = (url || '').replace(rootUrl, '')
@@ -53,8 +52,8 @@ const fakeFetchFactory = (
 */
 
 export const networkFactory = (
-  config:Object = {},
-  resolver?:Function = null,
+  config: Object = {},
+  resolver?: Function = null,
 ) => {
   const {
     hostUrl,
@@ -74,8 +73,8 @@ export const networkFactory = (
   }
 
   const requestFactory = (
-    method:string,
-    options?:Object = {}
+    method: string,
+    options?: Object = {}
   ) => {
     const {
       mutateRequest: optionMutateRequest,
