@@ -48,7 +48,10 @@ const fakeFetchFactory = (
 
 /*
   networkFactory:
-    helper that takes @config object and @resolver function for data testing.
+    helper that takes @config object and @resolver function for data testing,
+    and @resolver that accepts a function that takes a url/endpoint to then
+    return a predefined object to immitate a resolved resposne for offline
+    testing.
 */
 
 export const networkFactory = (
