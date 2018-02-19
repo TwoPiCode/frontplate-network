@@ -113,7 +113,7 @@ export const networkFactory = (
       return request(...args)
 
         // AFTER REQUEST
-        .catch(err => {
+        .catch(response => {
           const endTime = (new Date()).getTime()
           const deltaTime = endTime - startTime
 
@@ -121,9 +121,9 @@ export const networkFactory = (
           let body = null
 
           // if error is a Network error use object data
-          if (err instanceof NetworkError) {
-            status = err.status || status
-            body = err.body || body
+          if (response instanceof NetworkError) {
+            status = response.status || status
+            body = response.body || body
           }
 
           log(
@@ -136,16 +136,16 @@ export const networkFactory = (
             }
           )
 
-          optionOnResponse && optionOnResponse(status, body)
+          optionOnResponse && optionOnResponse(status, body, response)
 
           // Raise an actual error
-          throw err
+          throw response
         })
-        .then(res => {
+        .then(response => {
           const endTime = (new Date()).getTime()
           const deltaTime = endTime - startTime
 
-          const { status, body } = res
+          const { status, body } = response
 
           log(
             INFO,
@@ -157,7 +157,7 @@ export const networkFactory = (
             }
           )
 
-          optionOnResponse && optionOnResponse(status, body)
+          optionOnResponse && optionOnResponse(status, body, response)
 
           return body
         })

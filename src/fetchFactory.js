@@ -36,7 +36,8 @@ const resolveJson = (response: Object) => {
       checkStatus(status, json)
       return Promise.resolve({
         body: json,
-        status: response.status
+        status: response.status,
+        response
       })
     })
 }
@@ -51,7 +52,8 @@ const resolveText = (response: Object) => {
       checkStatus(status, text)
       return Promise.resolve({
         body: text,
-        status: response.status
+        status: response.status,
+        response
       })
     })
 }
