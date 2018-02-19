@@ -9,7 +9,7 @@
 function NetworkError (status: number, body: any) {
   this.status = status
   this.body = body
-  this.message = `Recieved ${status} response from server.`
+  this.message = `Received ${status} response from server.`
   this.stack = (new Error()).stack
 }
 NetworkError.prototype = Object.create(Error.prototype)
