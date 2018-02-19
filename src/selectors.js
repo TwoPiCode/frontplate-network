@@ -1,11 +1,11 @@
 
 // @flow
 
-export const selectUrlString = (url: Object|string): string => {
+export const selectUrlString = (url: Object|string) => {
   return url.toString ? url.toString() : url
 }
 
-export const selectBodyJSON = (body: Object|string): string => {
+export const selectBodyJSON = (body: Object|string) => {
   return typeof body === 'object' ? JSON.stringify(body) : body
 }
 
@@ -14,7 +14,11 @@ export const selectBodyJSON = (body: Object|string): string => {
     helper that takes status code and returns hex color code.
 */
 
-export const selectStatusColor = (status: number) => {
+export const selectStatusColor = (status: number|null) => {
+  if (!status) {
+    return '#afafaf'
+  }
+
   if (status >= 100 && status < 200) {
     // 100s - informational
     return '#afafaf'

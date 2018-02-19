@@ -28,7 +28,7 @@ const logFactory = (show: boolean = false) => {
 
 const fakeFetchFactory = (
   rootUrl: string,
-  resolver?: Function = () => null
+  resolver?: Function|null = () => null
 ) => {
   return (
     url: string
@@ -53,7 +53,7 @@ const fakeFetchFactory = (
 
 export const networkFactory = (
   config: Object = {},
-  resolver?: Function = null,
+  resolver?: Function|null = null,
 ) => {
   const {
     hostUrl,
@@ -85,8 +85,9 @@ export const networkFactory = (
     const fakeRequest = fakeFetchFactory(hostUrl, resolver)
 
     return (
-      ...args
+      ...args: Array<any>
     ) => {
+
       // BEFORE REQUEST
       const url = selectUrlString(args[0])
       args[0] = url
@@ -96,7 +97,7 @@ export const networkFactory = (
       const startTime = (new Date()).getTime()
       const endpoint = (url || '').replace(hostUrl, '')
 
-      const isDemoHost = enableDemo && ((url || '').indexOf(demoUrl) === 0)
+      const isDemoHost = demoUrl ? enableDemo && ((url || '').indexOf(demoUrl) === 0) : false
       const request = isDemoHost ? fakeRequest : realRequest
 
       log(
@@ -108,7 +109,7 @@ export const networkFactory = (
         }
       )
 
-      // REQUEST!
+      // REQUEST! $FlowIgnore
       return request(...args)
 
         // AFTER REQUEST
