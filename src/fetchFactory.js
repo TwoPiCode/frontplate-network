@@ -32,13 +32,9 @@ const resolveJson = (response: Object) => {
     .catch(() => {
       throw new JSONParseError(status)
     })
-    .then(json => {
-      checkStatus(status, json)
-      return Promise.resolve({
-        body: json,
-        status: response.status,
-        response
-      })
+    .then(data => {
+      checkStatus(status, data)
+      return data
     })
 }
 
@@ -48,13 +44,9 @@ const resolveText = (response: Object) => {
     .catch(err => {
       throw err
     })
-    .then(text => {
-      checkStatus(status, text)
-      return Promise.resolve({
-        body: text,
-        status: response.status,
-        response
-      })
+    .then(data => {
+      checkStatus(status, data)
+      return data
     })
 }
 
@@ -64,25 +56,23 @@ const resolveText = (response: Object) => {
 */
 
 export const resolveResponse = (response: Object, asJson: boolean) => {
-  const { headers } = response
-
+  const {status, headers} = response
   const isJson = headers.get('Content-Type') === MIMETYPE_JSON
-
-  /*
-    Raise error if non-successful response.
-  */
-
-  if (asJson) {
-    return resolveJson(response)
-  } else if (response) {
-    if (isJson) {
-      return resolveJson(response)
-    } else {
-      return resolveText(response)
+  return new Promise((resolve, reject) => {
+    // if no response
+    if (!response) {
+      return reject({body: null, status: null, response})
     }
-  } else {
-    return null
-  }
+    // if NO_CONTENT status code
+    if (status === 204) {
+      return resolve({body: null, status, response})
+    }
+    // resolve the content
+    const resolveContent = (asJson || isJson) ? resolveJson : resolveText
+    resolveContent(response).then((body => {
+      return resolve({body, status, response})
+    }))
+  })
 }
 
 /*
@@ -106,7 +96,7 @@ export const fetchFactory = (
 ) => {
   return (
     url: string,
-    body?: Object|string|null = undefined,
+    body?: Object|string|null,
     headers?: Object = {},
     options?: Object = {},
   ) => {
