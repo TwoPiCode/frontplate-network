@@ -57,7 +57,7 @@ const resolveText = (response: Object) => {
 
 export const resolveResponse = (response: Object, asJson: boolean) => {
   const {status, headers} = response
-  const isJson = headers.get('Content-Type') === MIMETYPE_JSON
+  const isJson = (headers.get('Content-Type') || '').indexOf(MIMETYPE_JSON) > -1
   return new Promise((resolve, reject) => {
     // if no response
     if (!response) {
