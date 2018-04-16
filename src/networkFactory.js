@@ -121,7 +121,7 @@ export const networkFactory = (
           let body = null
 
           // if error is a Network error use object data
-          if (response instanceof NetworkError) {
+          if (typeof response === 'object') {
             status = response.status || status
             body = response.body || body
           }

@@ -29,24 +29,22 @@ const checkStatus = (status: number, data: any) => {
 const resolveJson = (response: Object) => {
   const { status } = response
   return response.json()
-    .catch(() => {
-      throw new JSONParseError(status)
-    })
     .then(data => {
       checkStatus(status, data)
       return data
+    }).catch(() => {
+      throw new JSONParseError(status)
     })
 }
 
 const resolveText = (response: Object) => {
   const { status } = response
   return response.text()
-    .catch(err => {
-      throw err
-    })
     .then(data => {
       checkStatus(status, data)
       return data
+    }).catch(err => {
+      throw err
     })
 }
 
@@ -71,7 +69,9 @@ export const resolveResponse = (response: Object, asJson: boolean) => {
     const resolveContent = (asJson || isJson) ? resolveJson : resolveText
     resolveContent(response).then((body => {
       return resolve({body, status, response})
-    }))
+    })).catch(error => {
+      return reject(error)
+    })
   })
 }
 
@@ -137,13 +137,17 @@ export const fetchFactory = (
     // Allow external modification of the request before fetch.
     const request = mutateRequest(_request)
 
-    return fetch(request.url, {
-      method: method,
-      body: request.body,
-      headers: request.headers,
-      ...(request.options || {})
-    }).then(response => {
-      return resolveResponse(response, optionAsJson)
+    return new Promise((resolve, reject) => {
+      fetch(request.url, {
+        method: method,
+        body: request.body,
+        headers: request.headers,
+        ...(request.options || {})
+      }).then(response => {
+        return resolveResponse(response, optionAsJson).then(response.ok ? resolve : reject).catch(reject)
+      }).catch(error => {
+        return reject(error)
+      })
     })
   }
 }
