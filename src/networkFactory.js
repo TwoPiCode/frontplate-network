@@ -5,7 +5,6 @@ import SafeUrlAssembler from 'safe-url-assembler'
 
 import { fetchFactory, resolveResponse } from './fetchFactory'
 import { selectUrlString, selectStatusColor } from './selectors'
-import { NetworkError } from './errors'
 
 /*
   logFactory:
@@ -76,12 +75,7 @@ export const networkFactory = (
     method: string,
     options?: Object = {}
   ) => {
-    const {
-      mutateRequest: optionMutateRequest,
-      onResponse: optionOnResponse
-    } = options
-
-    const realRequest = fetchFactory(method, optionMutateRequest)
+    const realRequest = fetchFactory(method, options)
     const fakeRequest = fakeFetchFactory(hostUrl, resolver)
 
     return (
@@ -136,7 +130,7 @@ export const networkFactory = (
             }
           )
 
-          optionOnResponse && optionOnResponse(status, body, response)
+          options.onResponse && options.onResponse(status, body, response)
 
           // Raise an actual error
           throw response
@@ -157,7 +151,7 @@ export const networkFactory = (
             }
           )
 
-          optionOnResponse && optionOnResponse(status, body, response)
+          options.onResponse && options.onResponse(status, body, response)
 
           return body
         })

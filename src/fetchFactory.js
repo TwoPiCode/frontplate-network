@@ -53,7 +53,7 @@ const resolveText = (response: Object) => {
     returns processed data form for response object's body data.
 */
 
-export const resolveResponse = (response: Object, asJson: boolean) => {
+export const resolveResponse = (response: Object, asJson?: boolean): Promise<any> => {
   const {status, headers} = response
   const isJson = (headers.get('Content-Type') || '').indexOf(MIMETYPE_JSON) > -1
   return new Promise((resolve, reject) => {
@@ -92,15 +92,15 @@ export const resolveResponse = (response: Object, asJson: boolean) => {
 
 export const fetchFactory = (
   method: string,
-  mutateRequest: Function = (request) => request
+  _options: Object = {}
 ) => {
   return (
     url: string,
     body?: Object|string|null,
     headers?: Object = {},
     options?: Object = {},
-  ) => {
-    const _request = {
+  ): Promise<any> => {
+    let request = {
       url,
       body,
       headers: {...headers}
@@ -112,42 +112,49 @@ export const fetchFactory = (
     } = options
 
     // Resolve @url if raw Object from safe-url-assembler.
-    _request.url = selectUrlString(_request.url)
+    request.url = selectUrlString(request.url)
 
     // Serialise body if given as object,
-    _request.body = selectBodyJSON(_request.body)
+    request.body = selectBodyJSON(request.body)
 
     // Using formdata (e.g. in case of file upload).
     if (optionFormData) {
-      _request.body = new FormData()
-      if (typeof body === 'object') {
-        Object.keys(body).map(key => _request.body.append(key, body[key]))
+      request.body = new FormData()
+      if (body !== null && typeof body === 'object') {
+        Object.keys(body).map(key => request.body.append(key, body[key]))
       }
     }
 
     // Adding Content-Type headers.
     if (method === GET) {
-      delete _request.headers['Content-Type']
+      delete request.headers['Content-Type']
     } else if (optionFormData) {
-      _request.headers['Content-Type'] = MIMETYPE_FORMDATA
+      request.headers['Content-Type'] = MIMETYPE_FORMDATA
     } else {
-      _request.headers['Content-Type'] = MIMETYPE_JSON
+      request.headers['Content-Type'] = MIMETYPE_JSON
     }
 
+
     // Allow external modification of the request before fetch.
-    const request = mutateRequest(_request)
+    if (_options.mutateRequest) {
+      request = _options.mutateRequest(request)
+    }
 
     return new Promise((resolve, reject) => {
-      fetch(request.url, {
-        method: method,
-        body: request.body,
-        headers: request.headers,
-        ...(request.options || {})
-      }).then(response => {
-        return resolveResponse(response, optionAsJson).then(response.ok ? resolve : reject).catch(reject)
-      }).catch(error => {
-        return reject(error)
-      })
+      Promise.resolve(request)
+        .then((request = {}) => fetch(request.url, {
+          method: method,
+          body: request.body,
+          headers: request.headers,
+          ...(request.options || {})
+        }).then(response => {
+          return resolveResponse(response, optionAsJson)
+            .then(response.ok ? resolve : reject)
+            .catch(reject)
+        }))
+        .catch(error => {
+          return reject(error)
+        })
     })
   }
 }
