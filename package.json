@@ -1,6 +1,6 @@
 {
   "name": "frontplate-network",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Frontplate Network Helpers",
   "main": "dist/index.js",
   "scripts": {
