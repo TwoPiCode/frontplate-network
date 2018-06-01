@@ -32,7 +32,10 @@ const resolveJson = (response: Object) => {
     .then(data => {
       checkStatus(status, data)
       return data
-    }).catch(() => {
+    }).catch((error) => {
+      if (error instanceof NetworkError) {
+        throw error
+      }
       throw new JSONParseError(status)
     })
 }
